@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.junps.dompetku.ui.components.FeaturePlaceholder
+import com.junps.dompetku.ui.history.HistoryScreen
 import com.junps.dompetku.ui.theme.DompetBackground
 
 @Composable
@@ -58,7 +59,7 @@ fun DompetKuApp(
                 DestinationPlaceholder(AppDestination.Dashboard, "Ringkasan keuangan akan tersedia di branch dashboard.")
             }
             composable(AppDestination.History.route) {
-                DestinationPlaceholder(AppDestination.History, "Riwayat transaksi akan tersedia di branch history.")
+                HistoryScreen(onTransactionClick = {})
             }
             composable(AppDestination.Analytics.route) {
                 DestinationPlaceholder(AppDestination.Analytics, "Analisis keuangan akan tersedia di branch analytics.")
