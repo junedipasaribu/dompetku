@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.junps.dompetku.ui.category.CategoryScreen
 import com.junps.dompetku.ui.components.FeaturePlaceholder
 import com.junps.dompetku.ui.theme.DompetBackground
 
@@ -64,7 +65,7 @@ fun DompetKuApp(
                 DestinationPlaceholder(AppDestination.Analytics, "Analisis keuangan akan tersedia di branch analytics.")
             }
             composable(AppDestination.Categories.route) {
-                DestinationPlaceholder(AppDestination.Categories, "Pengelolaan kategori akan tersedia di branch category.")
+                CategoryScreen()
             }
         }
     }
