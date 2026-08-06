@@ -1,5 +1,7 @@
 package com.junps.dompetku.ui.analytics
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -28,15 +32,20 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
@@ -51,6 +60,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.junps.dompetku.core.format.formatRupiah
+import com.junps.dompetku.core.export.buildFinancialReportCsv
+import com.junps.dompetku.core.export.reportFileName
 import com.junps.dompetku.domain.model.CategoryExpense
 import com.junps.dompetku.domain.model.TransactionType
 import com.junps.dompetku.domain.model.TransactionWithCategory
@@ -70,6 +81,7 @@ import java.math.RoundingMode
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 @Composable
 fun AnalyticsScreen(
@@ -77,15 +89,54 @@ fun AnalyticsScreen(
     viewModel: AnalyticsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    when {
-        uiState.isLoading -> LoadingScreen("Memuat laporan pengeluaran", modifier)
-        uiState.errorMessage != null -> AnalyticsError(uiState.errorMessage.orEmpty(), modifier)
-        else -> AnalyticsContent(
-            uiState = uiState,
-            onPreviousMonth = viewModel::selectPreviousMonth,
-            onNextMonth = viewModel::selectNextMonth,
-            modifier = modifier,
-        )
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    var pendingCsv by remember { androidx.compose.runtime.mutableStateOf("") }
+    val createReport = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/csv"),
+    ) { uri ->
+        if (uri != null) {
+            val result = runCatching {
+                context.contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { writer ->
+                    writer.write('\uFEFF'.code)
+                    writer.write(pendingCsv)
+                } ?: error("Lokasi penyimpanan tidak dapat dibuka.")
+            }
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar(
+                    if (result.isSuccess) "Laporan berhasil disimpan."
+                    else result.exceptionOrNull()?.message ?: "Laporan gagal disimpan.",
+                )
+            }
+        }
+    }
+
+    Scaffold(
+        modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { innerPadding ->
+        val contentModifier = Modifier.padding(innerPadding)
+        when {
+            uiState.isLoading -> LoadingScreen("Memuat laporan pengeluaran", contentModifier)
+            uiState.errorMessage != null -> AnalyticsError(uiState.errorMessage.orEmpty(), contentModifier)
+            else -> AnalyticsContent(
+                uiState = uiState,
+                onPreviousMonth = viewModel::selectPreviousMonth,
+                onNextMonth = viewModel::selectNextMonth,
+                onDownload = {
+                    val monthStart = uiState.monthRange?.startInclusive ?: return@AnalyticsContent
+                    pendingCsv = buildFinancialReportCsv(
+                        monthStart = monthStart,
+                        totalIncome = uiState.totalIncome,
+                        totalExpense = uiState.totalExpense,
+                        transactions = uiState.transactions,
+                    )
+                    createReport.launch(reportFileName(monthStart))
+                },
+                modifier = contentModifier,
+            )
+        }
     }
 }
 
@@ -94,6 +145,7 @@ private fun AnalyticsContent(
     uiState: AnalyticsUiState,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
+    onDownload: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var chartType by remember { mutableStateOf(ReportChartType.PIE) }
@@ -142,6 +194,15 @@ private fun AnalyticsContent(
                     focusManager.clearFocus()
                 },
             )
+        }
+        item {
+            OutlinedButton(
+                onClick = onDownload,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Default.Download, contentDescription = null)
+                Text("Unduh CSV untuk Excel / Sheets", modifier = Modifier.padding(start = 8.dp))
+            }
         }
         if (uiState.expenses.isEmpty()) {
             item { EmptyAnalytics() }
