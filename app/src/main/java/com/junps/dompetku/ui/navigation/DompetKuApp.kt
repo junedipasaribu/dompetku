@@ -1,6 +1,9 @@
 package com.junps.dompetku.ui.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -17,8 +20,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 import com.junps.dompetku.ui.components.FeaturePlaceholder
 import com.junps.dompetku.ui.theme.DompetBackground
+import com.junps.dompetku.ui.theme.DompetGreen
+import com.junps.dompetku.ui.transaction.TransactionFormScreen
 
 @Composable
 fun DompetKuApp(
@@ -26,6 +33,9 @@ fun DompetKuApp(
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+    val isDashboard = currentDestination?.hierarchy?.any {
+        it.route == AppDestination.Dashboard.route
+    } == true
     val showBottomBar = AppDestination.bottomBarItems.any { destination ->
         currentDestination?.hierarchy?.any { it.route == destination.route } == true
     }
@@ -48,6 +58,17 @@ fun DompetKuApp(
                 )
             }
         },
+        floatingActionButton = {
+            if (isDashboard) {
+                FloatingActionButton(
+                    onClick = { navController.navigate(TransactionFormDestination.createRoute()) },
+                    containerColor = DompetGreen,
+                    contentColor = Color.White,
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Tambah transaksi")
+                }
+            }
+        },
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -65,6 +86,18 @@ fun DompetKuApp(
             }
             composable(AppDestination.Categories.route) {
                 DestinationPlaceholder(AppDestination.Categories, "Pengelolaan kategori akan tersedia di branch category.")
+            }
+            composable(
+                route = TransactionFormDestination.route,
+                arguments = listOf(
+                    navArgument(TransactionFormDestination.transactionIdArgument) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            ) {
+                TransactionFormScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }

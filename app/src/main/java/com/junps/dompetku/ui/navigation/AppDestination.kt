@@ -21,3 +21,11 @@ sealed class AppDestination(
         val bottomBarItems = listOf(Dashboard, History, Analytics, Categories)
     }
 }
+
+object TransactionFormDestination {
+    const val transactionIdArgument = "transactionId"
+    const val route = "transaction_form?$transactionIdArgument={$transactionIdArgument}"
+
+    fun createRoute(transactionId: String? = null): String =
+        if (transactionId == null) "transaction_form" else "transaction_form?$transactionIdArgument=$transactionId"
+}
