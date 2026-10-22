@@ -24,6 +24,8 @@ class FinancialReportCsvTest {
             categoryType = TransactionType.EXPENSE,
             categoryIconName = "restaurant",
             categoryColorCode = "#E65100",
+            accountId = "default_account",
+            accountName = "Dompet Utama",
         )
 
         val csv = buildFinancialReportCsv(monthStart, 100_000, 15_000, listOf(transaction))

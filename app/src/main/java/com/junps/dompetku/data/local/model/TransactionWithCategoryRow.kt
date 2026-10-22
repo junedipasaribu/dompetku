@@ -12,4 +12,6 @@ data class TransactionWithCategoryRow(
     val categoryType: TransactionType,
     val categoryIconName: String,
     val categoryColorCode: String,
+    val accountId: String,
+    val accountName: String,
 )

@@ -1,12 +1,14 @@
 package com.junps.dompetku.di
 
-import com.junps.dompetku.data.repository.OfflineCategoryRepository
+import com.junps.dompetku.data.repository.OfflineAccountRepository
 import com.junps.dompetku.data.repository.OfflineAnalyticsRepository
+import com.junps.dompetku.data.repository.OfflineCategoryRepository
 import com.junps.dompetku.data.repository.OfflineDashboardRepository
 import com.junps.dompetku.data.repository.OfflineHistoryRepository
 import com.junps.dompetku.data.repository.OfflineTransactionRepository
-import com.junps.dompetku.domain.repository.CategoryRepository
+import com.junps.dompetku.domain.repository.AccountRepository
 import com.junps.dompetku.domain.repository.AnalyticsRepository
+import com.junps.dompetku.domain.repository.CategoryRepository
 import com.junps.dompetku.domain.repository.DashboardRepository
 import com.junps.dompetku.domain.repository.HistoryRepository
 import com.junps.dompetku.domain.repository.TransactionRepository
@@ -38,4 +40,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindHistoryRepository(implementation: OfflineHistoryRepository): HistoryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAccountRepository(implementation: OfflineAccountRepository): AccountRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(implementation: com.junps.dompetku.data.repository.DataStoreSettingsRepository): com.junps.dompetku.domain.repository.SettingsRepository
 }

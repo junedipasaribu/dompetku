@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.junps.dompetku.domain.model.FinancialSummary
 import com.junps.dompetku.domain.model.MonthRange
 import com.junps.dompetku.domain.model.TransactionWithCategory
+import com.junps.dompetku.domain.model.AccountWithBalance
 import com.junps.dompetku.domain.repository.DashboardRepository
 import com.junps.dompetku.domain.time.MonthRangeCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,7 @@ data class DashboardUiState(
     val monthRange: MonthRange? = null,
     val summary: FinancialSummary = FinancialSummary(),
     val recentTransactions: List<TransactionWithCategory> = emptyList(),
+    val accounts: List<AccountWithBalance> = emptyList(),
     val errorMessage: String? = null,
 )
 
@@ -48,12 +50,14 @@ class DashboardViewModel @Inject constructor(
             combine(
                 repository.observeSummary(monthRange),
                 repository.observeRecentTransactions(RECENT_TRANSACTION_LIMIT),
-            ) { summary, recentTransactions ->
+                repository.observeAccountsWithBalance()
+            ) { summary, recentTransactions, accounts ->
                 DashboardUiState(
                     isLoading = false,
                     monthRange = monthRange,
                     summary = summary,
                     recentTransactions = recentTransactions,
+                    accounts = accounts,
                 )
             }
         }

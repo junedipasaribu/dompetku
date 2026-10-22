@@ -9,6 +9,7 @@ fun CategoryEntity.toDomain(): Category = Category(
     type = type,
     iconName = iconName,
     colorCode = colorCode,
+    monthlyBudget = monthlyBudget,
     isDefault = isDefault,
 )
 
@@ -18,5 +19,6 @@ fun Category.toEntity(): CategoryEntity = CategoryEntity(
     type = type,
     iconName = iconName,
     colorCode = colorCode,
+    monthlyBudget = monthlyBudget,
     isDefault = isDefault,
 )

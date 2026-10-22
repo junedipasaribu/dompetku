@@ -108,8 +108,11 @@ fun TransactionFormScreen(
                 uiState = uiState,
                 onAmountChange = viewModel::onAmountChange,
                 onCategoryChange = viewModel::onCategoryChange,
+                onAccountChange = viewModel::onAccountChange,
                 onDateChange = viewModel::onTransactionDateChange,
                 onNoteChange = viewModel::onNoteChange,
+                onRecurringChange = viewModel::onRecurringChange,
+                onFrequencyChange = viewModel::onFrequencyChange,
                 onSave = viewModel::save,
                 onDelete = { showDeleteConfirmation = true },
                 modifier = Modifier.padding(innerPadding),
@@ -140,13 +143,17 @@ private fun TransactionForm(
     uiState: TransactionFormUiState,
     onAmountChange: (String) -> Unit,
     onCategoryChange: (String) -> Unit,
+    onAccountChange: (String) -> Unit,
     onDateChange: (Long) -> Unit,
     onNoteChange: (String) -> Unit,
+    onRecurringChange: (Boolean) -> Unit,
+    onFrequencyChange: (String) -> Unit,
     onSave: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var categoryExpanded by remember { mutableStateOf(false) }
+    var accountExpanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
 
@@ -208,6 +215,40 @@ private fun TransactionForm(
             }
         }
 
+        ExposedDropdownMenuBox(
+            expanded = accountExpanded,
+            onExpandedChange = { accountExpanded = !accountExpanded },
+        ) {
+            OutlinedTextField(
+                value = uiState.selectedAccount?.name.orEmpty(),
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
+                label = { Text("Dompet / Rekening") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(accountExpanded) },
+            )
+            ExposedDropdownMenu(
+                expanded = accountExpanded,
+                onDismissRequest = { accountExpanded = false },
+            ) {
+                uiState.accounts.forEach { account ->
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(account.name)
+                            }
+                        },
+                        onClick = {
+                            onAccountChange(account.id)
+                            accountExpanded = false
+                        },
+                    )
+                }
+            }
+        }
+
         DateTimeButtons(
             timestamp = uiState.transactionDate,
             onDateClick = { showDatePicker = true },
@@ -223,6 +264,62 @@ private fun TransactionForm(
             maxLines = 5,
             supportingText = { Text("${uiState.note.length}/200") },
         )
+
+        if (!uiState.isEditMode) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                androidx.compose.material3.Checkbox(
+                    checked = uiState.isRecurring,
+                    onCheckedChange = onRecurringChange
+                )
+                Text(
+                    text = "Buat transaksi berulang?",
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
+            if (uiState.isRecurring) {
+                var frequencyExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = frequencyExpanded,
+                    onExpandedChange = { frequencyExpanded = !frequencyExpanded },
+                ) {
+                    val freqText = when (uiState.frequency) {
+                        "daily" -> "Harian"
+                        "weekly" -> "Mingguan"
+                        "monthly" -> "Bulanan"
+                        "yearly" -> "Tahunan"
+                        else -> ""
+                    }
+                    OutlinedTextField(
+                        value = freqText,
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                            .fillMaxWidth(),
+                        label = { Text("Frekuensi Berulang") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(frequencyExpanded) },
+                    )
+                    ExposedDropdownMenu(
+                        expanded = frequencyExpanded,
+                        onDismissRequest = { frequencyExpanded = false },
+                    ) {
+                        listOf("daily" to "Harian", "weekly" to "Mingguan", "monthly" to "Bulanan", "yearly" to "Tahunan").forEach { freq ->
+                            DropdownMenuItem(
+                                text = { Text(freq.second) },
+                                onClick = {
+                                    onFrequencyChange(freq.first)
+                                    frequencyExpanded = false
+                                },
+                            )
+                        }
+                    }
+                }
+            }
+        }
 
         Button(
             onClick = onSave,

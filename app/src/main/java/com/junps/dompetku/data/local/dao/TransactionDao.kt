@@ -61,9 +61,12 @@ interface TransactionDao {
             categories.name AS categoryName,
             categories.type AS categoryType,
             categories.iconName AS categoryIconName,
-            categories.colorCode AS categoryColorCode
+            categories.colorCode AS categoryColorCode,
+            accounts.id AS accountId,
+            accounts.name AS accountName
         FROM transactions
         INNER JOIN categories ON categories.id = transactions.categoryId
+        INNER JOIN accounts ON accounts.id = transactions.accountId
         ORDER BY transactions.transactionDate DESC, transactions.createdAt DESC
         LIMIT :limit
         """,
@@ -81,9 +84,12 @@ interface TransactionDao {
             categories.name AS categoryName,
             categories.type AS categoryType,
             categories.iconName AS categoryIconName,
-            categories.colorCode AS categoryColorCode
+            categories.colorCode AS categoryColorCode,
+            accounts.id AS accountId,
+            accounts.name AS accountName
         FROM transactions
         INNER JOIN categories ON categories.id = transactions.categoryId
+        INNER JOIN accounts ON accounts.id = transactions.accountId
         ORDER BY transactions.transactionDate DESC, transactions.createdAt DESC
         """,
     )
@@ -100,9 +106,12 @@ interface TransactionDao {
             categories.name AS categoryName,
             categories.type AS categoryType,
             categories.iconName AS categoryIconName,
-            categories.colorCode AS categoryColorCode
+            categories.colorCode AS categoryColorCode,
+            accounts.id AS accountId,
+            accounts.name AS accountName
         FROM transactions
         INNER JOIN categories ON categories.id = transactions.categoryId
+        INNER JOIN accounts ON accounts.id = transactions.accountId
         WHERE transactions.transactionDate >= :monthStart
           AND transactions.transactionDate < :nextMonthStart
         ORDER BY transactions.transactionDate ASC, transactions.createdAt ASC
@@ -120,13 +129,14 @@ interface TransactionDao {
             categories.name AS categoryName,
             categories.iconName AS categoryIconName,
             categories.colorCode AS categoryColorCode,
+            categories.monthlyBudget AS monthlyBudget,
             SUM(transactions.amount) AS totalAmount
         FROM transactions
         INNER JOIN categories ON categories.id = transactions.categoryId
         WHERE categories.type = 'EXPENSE'
           AND transactions.transactionDate >= :monthStart
           AND transactions.transactionDate < :nextMonthStart
-        GROUP BY categories.id, categories.name, categories.iconName, categories.colorCode
+        GROUP BY categories.id, categories.name, categories.iconName, categories.colorCode, categories.monthlyBudget
         HAVING SUM(transactions.amount) > 0
         ORDER BY totalAmount DESC, categories.name COLLATE NOCASE ASC
         """,

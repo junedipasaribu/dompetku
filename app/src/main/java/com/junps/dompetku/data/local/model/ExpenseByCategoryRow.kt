@@ -6,4 +6,5 @@ data class ExpenseByCategoryRow(
     val categoryIconName: String,
     val categoryColorCode: String,
     val totalAmount: Long,
+    val monthlyBudget: Long = 0,
 )

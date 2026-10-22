@@ -10,4 +10,6 @@ data class TransactionWithCategory(
     val categoryType: TransactionType,
     val categoryIconName: String,
     val categoryColorCode: String,
+    val accountId: String,
+    val accountName: String,
 )

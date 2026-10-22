@@ -34,7 +34,14 @@ fun buildFinancialReportCsv(
 fun reportFileName(monthStart: Long): String =
     "laporan-dompetku-${SimpleDateFormat("yyyy-MM", IndonesianLocale).format(Date(monthStart))}.csv"
 
-private fun csv(value: String): String = "\"${value.replace("\"", "\"\"")}\""
+private fun csv(value: String): String {
+    val firstMeaningfulCharacter = value.trimStart().firstOrNull()
+    val needsFormulaEscape = firstMeaningfulCharacter != null && firstMeaningfulCharacter in FORMULA_PREFIXES
+    val safeValue = if (needsFormulaEscape) "'$value" else value
+    return "\"${safeValue.replace("\"", "\"\"")}\""
+}
+
+private val FORMULA_PREFIXES = setOf('=', '+', '-', '@', '\t', '\r', '\n')
 private fun formatMonth(timestamp: Long) = SimpleDateFormat("MMMM yyyy", IndonesianLocale).format(Date(timestamp))
 private fun formatDate(timestamp: Long) = SimpleDateFormat("dd/MM/yyyy", IndonesianLocale).format(Date(timestamp))
 private fun formatTime(timestamp: Long) = SimpleDateFormat("HH:mm", IndonesianLocale).format(Date(timestamp))

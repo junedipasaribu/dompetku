@@ -47,6 +47,8 @@ class TransactionDateGrouperTest {
         categoryType = TransactionType.EXPENSE,
         categoryIconName = "restaurant",
         categoryColorCode = "#E65100",
+        accountId = "default_account",
+        accountName = "Dompet Utama",
     )
 
     private fun timestamp(

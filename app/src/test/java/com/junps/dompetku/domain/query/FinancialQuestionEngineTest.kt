@@ -67,6 +67,8 @@ class FinancialQuestionEngineTest {
         categoryType = type,
         categoryIconName = "wallet",
         categoryColorCode = "#000000",
+        accountId = "default_account",
+        accountName = "Dompet Utama",
     )
 
     private fun timestamp(year: Int, month: Int, day: Int, hour: Int): Long =

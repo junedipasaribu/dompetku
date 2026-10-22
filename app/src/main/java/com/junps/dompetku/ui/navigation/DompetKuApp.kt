@@ -33,8 +33,8 @@ import com.junps.dompetku.ui.theme.DompetGreen
 @Composable
 fun DompetKuApp(
     navController: NavHostController = rememberNavController(),
-    dashboardContent: @Composable (onTransactionClick: (String) -> Unit) -> Unit = { onTransactionClick ->
-        DashboardScreen(onTransactionClick = onTransactionClick)
+    dashboardContent: @Composable (onTransactionClick: (String) -> Unit, onSettingsClick: () -> Unit) -> Unit = { onTransactionClick, onSettingsClick ->
+        DashboardScreen(onTransactionClick = onTransactionClick, onSettingsClick = onSettingsClick)
     },
     historyContent: @Composable (onTransactionClick: (String) -> Unit) -> Unit = { onTransactionClick ->
         HistoryScreen(onTransactionClick = onTransactionClick)
@@ -88,9 +88,14 @@ fun DompetKuApp(
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(AppDestination.Dashboard.route) {
-                dashboardContent { transactionId ->
-                    navController.navigate(TransactionFormDestination.createRoute(transactionId))
-                }
+                dashboardContent(
+                    { transactionId ->
+                        navController.navigate(TransactionFormDestination.createRoute(transactionId))
+                    },
+                    {
+                        navController.navigate(AppDestination.Settings.route)
+                    }
+                )
             }
             composable(AppDestination.History.route) {
                 historyContent { transactionId ->
@@ -102,6 +107,16 @@ fun DompetKuApp(
             }
             composable(AppDestination.Categories.route) {
                 CategoryScreen()
+            }
+            composable(AppDestination.Accounts.route) {
+                com.junps.dompetku.ui.account.AccountScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable(AppDestination.Settings.route) {
+                com.junps.dompetku.ui.settings.SettingsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
             composable(
                 route = TransactionFormDestination.route,

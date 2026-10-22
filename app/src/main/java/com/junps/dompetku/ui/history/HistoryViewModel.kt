@@ -69,4 +69,16 @@ class HistoryViewModel @Inject constructor(
                 }
         }
     }
+
+    fun showExportSuccess() {
+        viewModelScope.launch {
+            _events.emit(HistoryEvent.ShowMessage("Laporan berhasil diekspor ke PDF."))
+        }
+    }
+
+    fun showExportError() {
+        viewModelScope.launch {
+            _events.emit(HistoryEvent.ShowMessage("Gagal mengekspor laporan."))
+        }
+    }
 }

@@ -26,7 +26,7 @@ class DompetKuAppTest {
         composeRule.setContent {
             DompetKuTheme {
                 DompetKuApp(
-                    dashboardContent = { Text("DompetKu") },
+                    dashboardContent = { _, _ -> Text("DompetKu") },
                     historyContent = { Text("Belum ada riwayat") },
                 )
             }
@@ -45,7 +45,7 @@ class DompetKuAppTest {
             DompetKuTheme {
                 DompetKuApp(
                     navController = navController,
-                    dashboardContent = { Text("DompetKu") },
+                    dashboardContent = { _, _ -> Text("DompetKu") },
                     historyContent = { Text("Belum ada riwayat") },
                     transactionFormContent = { Text("Tambah transaksi") },
                 )

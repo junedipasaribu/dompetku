@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.junps.dompetku.data.local.entity.CategoryEntity
+import com.junps.dompetku.data.local.entity.AccountEntity
 import com.junps.dompetku.data.local.entity.TransactionEntity
 import com.junps.dompetku.domain.model.TransactionType
 import java.io.IOException
@@ -29,6 +30,11 @@ class DompetKuDatabaseTest {
         database = Room.inMemoryDatabaseBuilder(context, DompetKuDatabase::class.java)
             .allowMainThreadQueries()
             .build()
+        runBlocking {
+            database.accountDao().insertAccount(
+                AccountEntity("default_account", "Dompet Utama", createdAt = 1_700_000_000_000),
+            )
+        }
     }
 
     @After
@@ -74,6 +80,7 @@ class DompetKuDatabaseTest {
             id = "transaction_1",
             amount = 1_000_000,
             categoryId = category.id,
+            accountId = "default_account",
             transactionDate = 1_700_000_000_000,
             note = "Test",
             createdAt = 1_700_000_000_000,
@@ -108,10 +115,10 @@ class DompetKuDatabaseTest {
         val expense = DefaultCategories.all.first { it.type == TransactionType.EXPENSE }
         database.categoryDao().insertAll(listOf(income, expense))
         val transactions = listOf(
-            TransactionEntity("old-income", 1_000, income.id, 999, null, 1),
-            TransactionEntity("month-income", 500, income.id, 1_000, null, 2),
-            TransactionEntity("month-expense", 200, expense.id, 1_999, null, 3),
-            TransactionEntity("next-month-expense", 50, expense.id, 2_000, null, 4),
+            TransactionEntity("old-income", 1_000, income.id, "default_account", 999, null, 1),
+            TransactionEntity("month-income", 500, income.id, "default_account", 1_000, null, 2),
+            TransactionEntity("month-expense", 200, expense.id, "default_account", 1_999, null, 3),
+            TransactionEntity("next-month-expense", 50, expense.id, "default_account", 2_000, null, 4),
         )
         transactions.forEach { database.transactionDao().insert(it) }
 
@@ -127,9 +134,9 @@ class DompetKuDatabaseTest {
         val category = DefaultCategories.all.first()
         database.categoryDao().insert(category)
         listOf(
-            TransactionEntity("old", 100, category.id, 1_000, null, 1),
-            TransactionEntity("new", 300, category.id, 3_000, "Terbaru", 3),
-            TransactionEntity("middle", 200, category.id, 2_000, null, 2),
+            TransactionEntity("old", 100, category.id, "default_account", 1_000, null, 1),
+            TransactionEntity("new", 300, category.id, "default_account", 3_000, "Terbaru", 3),
+            TransactionEntity("middle", 200, category.id, "default_account", 2_000, null, 2),
         ).forEach { database.transactionDao().insert(it) }
 
         val recent = database.transactionDao().observeRecentWithCategory(2).first()
@@ -148,12 +155,12 @@ class DompetKuDatabaseTest {
         val salary = CategoryEntity("salary", "Gaji", TransactionType.INCOME, "payments", "#2E7D32")
         database.categoryDao().insertAll(listOf(food, transport, salary))
         listOf(
-            TransactionEntity("food-1", 40_000, food.id, 1_000, null, 1),
-            TransactionEntity("food-2", 60_000, food.id, 1_500, null, 2),
-            TransactionEntity("transport-1", 75_000, transport.id, 1_999, null, 3),
-            TransactionEntity("before-month", 999_000, food.id, 999, null, 4),
-            TransactionEntity("next-month", 999_000, transport.id, 2_000, null, 5),
-            TransactionEntity("income", 5_000_000, salary.id, 1_250, null, 6),
+            TransactionEntity("food-1", 40_000, food.id, "default_account", 1_000, null, 1),
+            TransactionEntity("food-2", 60_000, food.id, "default_account", 1_500, null, 2),
+            TransactionEntity("transport-1", 75_000, transport.id, "default_account", 1_999, null, 3),
+            TransactionEntity("before-month", 999_000, food.id, "default_account", 999, null, 4),
+            TransactionEntity("next-month", 999_000, transport.id, "default_account", 2_000, null, 5),
+            TransactionEntity("income", 5_000_000, salary.id, "default_account", 1_250, null, 6),
         ).forEach { database.transactionDao().insert(it) }
 
         val expenses = database.transactionDao().observeExpensesByCategory(1_000, 2_000).first()
@@ -168,10 +175,10 @@ class DompetKuDatabaseTest {
         val category = DefaultCategories.all.first()
         database.categoryDao().insert(category)
         listOf(
-            TransactionEntity("inside-later", 200, category.id, 1_500, null, 2),
-            TransactionEntity("inside-first", 100, category.id, 1_000, null, 1),
-            TransactionEntity("before", 50, category.id, 999, null, 3),
-            TransactionEntity("next", 300, category.id, 2_000, null, 4),
+            TransactionEntity("inside-later", 200, category.id, "default_account", 1_500, null, 2),
+            TransactionEntity("inside-first", 100, category.id, "default_account", 1_000, null, 1),
+            TransactionEntity("before", 50, category.id, "default_account", 999, null, 3),
+            TransactionEntity("next", 300, category.id, "default_account", 2_000, null, 4),
         ).forEach { database.transactionDao().insert(it) }
 
         val result = database.transactionDao().observeWithCategoryInRange(1_000, 2_000).first()

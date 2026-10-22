@@ -1,7 +1,9 @@
 package com.junps.dompetku.data.repository
 
+import com.junps.dompetku.data.local.dao.AccountDao
 import com.junps.dompetku.data.local.dao.TransactionDao
 import com.junps.dompetku.data.mapper.toDomain
+import com.junps.dompetku.domain.model.AccountWithBalance
 import com.junps.dompetku.domain.model.FinancialSummary
 import com.junps.dompetku.domain.model.MonthRange
 import com.junps.dompetku.domain.model.TransactionWithCategory
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.map
 
 class OfflineDashboardRepository @Inject constructor(
     private val transactionDao: TransactionDao,
+    private val accountDao: AccountDao,
 ) : DashboardRepository {
     override fun observeSummary(monthRange: MonthRange): Flow<FinancialSummary> =
         transactionDao.observeFinancialSummary(
@@ -29,6 +32,20 @@ class OfflineDashboardRepository @Inject constructor(
         require(limit > 0) { "Limit transaksi harus lebih besar dari nol." }
         return transactionDao.observeRecentWithCategory(limit).map { rows ->
             rows.map { it.toDomain() }
+        }
+    }
+
+    override fun observeAccountsWithBalance(): Flow<List<AccountWithBalance>> {
+        return accountDao.observeAccountsWithBalance().map { rows ->
+            rows.map { row ->
+                AccountWithBalance(
+                    id = row.id,
+                    name = row.name,
+                    initialBalance = row.initialBalance,
+                    createdAt = row.createdAt,
+                    balance = row.balance,
+                )
+            }
         }
     }
 }

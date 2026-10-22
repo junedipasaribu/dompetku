@@ -1,6 +1,7 @@
 package com.junps.dompetku.domain.usecase
 
 import com.junps.dompetku.domain.model.Transaction
+import com.junps.dompetku.domain.repository.AccountRepository
 import com.junps.dompetku.domain.repository.CategoryRepository
 import com.junps.dompetku.domain.repository.TransactionRepository
 import java.util.UUID
@@ -10,6 +11,7 @@ data class SaveTransactionRequest(
     val id: String? = null,
     val amount: Long,
     val categoryId: String,
+    val accountId: String,
     val transactionDate: Long,
     val note: String,
 )
@@ -17,6 +19,7 @@ data class SaveTransactionRequest(
 class SaveTransactionUseCase @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository,
+    private val accountRepository: AccountRepository,
 ) {
     suspend operator fun invoke(request: SaveTransactionRequest) {
         if (request.amount <= 0) throw TransactionException("Nominal harus lebih besar dari nol.")
@@ -26,6 +29,9 @@ class SaveTransactionUseCase @Inject constructor(
         }
         if (categoryRepository.getById(request.categoryId) == null) {
             throw TransactionException("Pilih kategori yang valid.")
+        }
+        if (accountRepository.getAccountById(request.accountId) == null) {
+            throw TransactionException("Pilih dompet/rekening yang valid.")
         }
 
         val existing = request.id?.let { id ->
@@ -37,6 +43,7 @@ class SaveTransactionUseCase @Inject constructor(
             id = existing?.id ?: UUID.randomUUID().toString(),
             amount = request.amount,
             categoryId = request.categoryId,
+            accountId = request.accountId,
             transactionDate = request.transactionDate,
             note = request.note.trim().ifEmpty { null },
             createdAt = existing?.createdAt ?: now,

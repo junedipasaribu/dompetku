@@ -12,6 +12,7 @@ data class SaveCategoryRequest(
     val type: TransactionType,
     val iconName: String,
     val colorCode: String,
+    val monthlyBudget: Long = 0,
 )
 
 class SaveCategoryUseCase @Inject constructor(
@@ -43,6 +44,7 @@ class SaveCategoryUseCase @Inject constructor(
             type = type,
             iconName = request.iconName,
             colorCode = request.colorCode.uppercase(),
+            monthlyBudget = request.monthlyBudget,
             isDefault = existing?.isDefault ?: false,
         )
         if (existing == null) repository.add(category) else repository.update(category)

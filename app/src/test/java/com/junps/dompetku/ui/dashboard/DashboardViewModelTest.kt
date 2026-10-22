@@ -1,6 +1,7 @@
 package com.junps.dompetku.ui.dashboard
 
 import com.junps.dompetku.domain.model.FinancialSummary
+import com.junps.dompetku.domain.model.AccountWithBalance
 import com.junps.dompetku.domain.model.MonthRange
 import com.junps.dompetku.domain.model.TransactionWithCategory
 import com.junps.dompetku.domain.repository.DashboardRepository
@@ -69,6 +70,8 @@ private class FakeDashboardRepository(
         requestedRecentLimit = limit
         return recentFlow
     }
+
+    override fun observeAccountsWithBalance(): Flow<List<AccountWithBalance>> = flowOf(emptyList())
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

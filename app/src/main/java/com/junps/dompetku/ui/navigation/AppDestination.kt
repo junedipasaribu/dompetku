@@ -2,6 +2,7 @@ package com.junps.dompetku.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Home
@@ -16,9 +17,11 @@ sealed class AppDestination(
     data object History : AppDestination("history", "Riwayat", Icons.AutoMirrored.Filled.ReceiptLong)
     data object Analytics : AppDestination("analytics", "Laporan", Icons.Default.BarChart)
     data object Categories : AppDestination("categories", "Kategori", Icons.Default.Category)
+    data object Accounts : AppDestination("accounts", "Dompet", Icons.Default.AccountBalanceWallet)
+    data object Settings : AppDestination("settings", "Pengaturan", Icons.Default.Home)
 
     companion object {
-        val bottomBarItems = listOf(Dashboard, History, Analytics, Categories)
+        val bottomBarItems = listOf(Dashboard, History, Analytics, Categories, Accounts)
     }
 }
 

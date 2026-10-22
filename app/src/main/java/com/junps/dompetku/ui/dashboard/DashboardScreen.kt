@@ -1,5 +1,6 @@
 package com.junps.dompetku.ui.dashboard
 
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,11 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.Card
@@ -36,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.junps.dompetku.core.format.formatRupiah
+import com.junps.dompetku.domain.model.AccountWithBalance
 import com.junps.dompetku.domain.model.TransactionType
 import com.junps.dompetku.domain.model.TransactionWithCategory
 import com.junps.dompetku.ui.components.categoryIcon
@@ -51,6 +56,7 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     onTransactionClick: (String) -> Unit,
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
@@ -59,7 +65,7 @@ fun DashboardScreen(
     when {
         uiState.isLoading -> LoadingScreen("Memuat ringkasan keuangan", modifier)
         uiState.errorMessage != null -> DashboardError(uiState.errorMessage.orEmpty(), modifier)
-        else -> DashboardContent(uiState, onTransactionClick, modifier)
+        else -> DashboardContent(uiState, onTransactionClick, onSettingsClick, modifier)
     }
 }
 
@@ -67,6 +73,7 @@ fun DashboardScreen(
 private fun DashboardContent(
     uiState: DashboardUiState,
     onTransactionClick: (String) -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -77,11 +84,24 @@ private fun DashboardContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Text("Ringkasan", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(
-                uiState.monthRange?.startInclusive?.let(::formatMonth).orEmpty(),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Ringkasan", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        uiState.monthRange?.startInclusive?.let(::formatMonth).orEmpty(),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                androidx.compose.material3.IconButton(
+                    onClick = onSettingsClick
+                ) {
+                    Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = "Pengaturan")
+                }
+            }
         }
         item {
             BalanceCard(
@@ -96,6 +116,22 @@ private fun DashboardContent(
             ) {
                 SummaryCard("Pemasukan", uiState.summary.monthlyIncome, Icons.Default.ArrowDownward, DompetGreen, Modifier.weight(1f))
                 SummaryCard("Pengeluaran", uiState.summary.monthlyExpense, Icons.Default.ArrowUpward, DompetRed, Modifier.weight(1f))
+            }
+        }
+        if (uiState.accounts.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(4.dp))
+                Text("Daftar Dompet", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+            }
+            item {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(uiState.accounts, key = { it.id }) { account ->
+                        AccountCard(account = account)
+                    }
+                }
             }
         }
         item {
@@ -120,7 +156,7 @@ private fun BalanceCard(balance: Long, monthLabel: String) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(Modifier.padding(20.dp)) {
-            Text("Saldo saat ini", color = Color.White.copy(alpha = .75f))
+            Text("Total Saldo (Semua Dompet)", color = Color.White.copy(alpha = .75f))
             Spacer(Modifier.height(8.dp))
             Text(
                 formatRupiah(balance),
@@ -130,6 +166,31 @@ private fun BalanceCard(balance: Long, monthLabel: String) {
             )
             Spacer(Modifier.height(14.dp))
             Text(monthLabel, color = Color.White.copy(alpha = .85f), style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+@Composable
+private fun AccountCard(account: AccountWithBalance, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(account.name, color = Color.Gray, style = MaterialTheme.typography.labelMedium)
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                formatRupiah(account.balance),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

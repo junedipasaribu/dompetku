@@ -1,5 +1,6 @@
 package com.junps.dompetku.ui.history
 
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -76,6 +77,23 @@ fun HistoryScreen(
         }
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val exportPdfLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/pdf"),
+        onResult = { uri ->
+            if (uri != null) {
+                val transactions = uiState.groups.flatMap { it.transactions }
+                val exporter = com.junps.dompetku.core.export.PdfExporter(context)
+                val success = exporter.exportTransactionsToPdf(transactions, uri)
+                if (success) {
+                    viewModel.showExportSuccess()
+                } else {
+                    viewModel.showExportError()
+                }
+            }
+        }
+    )
+
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -91,6 +109,10 @@ fun HistoryScreen(
                 groups = uiState.groups,
                 onTransactionClick = onTransactionClick,
                 onDelete = { transactionToDelete = it },
+                onExportPdf = {
+                    val dateStr = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(java.util.Date())
+                    exportPdfLauncher.launch("Laporan_Transaksi_$dateStr.pdf")
+                },
                 modifier = Modifier.padding(innerPadding),
             )
         }
@@ -123,6 +145,7 @@ private fun HistoryList(
     groups: List<TransactionDayGroup>,
     onTransactionClick: (String) -> Unit,
     onDelete: (TransactionWithCategory) -> Unit,
+    onExportPdf: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -131,11 +154,27 @@ private fun HistoryList(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Text("Riwayat", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text(
-                "Semua transaksi, diurutkan dari yang terbaru.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Riwayat", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        "Semua transaksi, diurutkan dari yang terbaru.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                
+                IconButton(onClick = { onExportPdf() }) {
+                    Icon(
+                        imageVector = androidx.compose.material.icons.Icons.Filled.PictureAsPdf,
+                        contentDescription = "Ekspor PDF",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
         groups.forEach { group ->
             item(key = "header-${group.dayStart}") {

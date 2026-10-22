@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,6 +47,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -260,12 +262,15 @@ private fun CategoryRow(
 private fun CategoryEditorDialog(
     category: Category?,
     onDismiss: () -> Unit,
-    onSave: (String?, String, TransactionType, String, String) -> Unit,
+    onSave: (String?, String, TransactionType, String, String, Long) -> Unit,
 ) {
     var name by remember(category?.id) { mutableStateOf(category?.name.orEmpty()) }
     var type by remember(category?.id) { mutableStateOf(category?.type ?: TransactionType.EXPENSE) }
     var iconName by remember(category?.id) { mutableStateOf(category?.iconName ?: CategoryIconOptions.first()) }
     var colorCode by remember(category?.id) { mutableStateOf(category?.colorCode ?: CategoryColorOptions.first()) }
+    var monthlyBudgetStr by remember(category?.id) { 
+        mutableStateOf(if (category != null && category.monthlyBudget > 0) category.monthlyBudget.toString() else "") 
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -294,6 +299,23 @@ private fun CategoryEditorDialog(
                         )
                     }
                 }
+                
+                if (type == TransactionType.EXPENSE) {
+                    OutlinedTextField(
+                        value = monthlyBudgetStr,
+                        onValueChange = { newValue -> 
+                            if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                                monthlyBudgetStr = newValue
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Anggaran Bulanan (Opsional)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        supportingText = { Text("Biarkan kosong jika tidak ada batas") },
+                    )
+                }
+
                 Text("Ikon", style = MaterialTheme.typography.labelLarge)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     items(CategoryIconOptions) { option ->
@@ -333,7 +355,10 @@ private fun CategoryEditorDialog(
         confirmButton = {
             TextButton(
                 enabled = name.isNotBlank(),
-                onClick = { onSave(category?.id, name, type, iconName, colorCode) },
+                onClick = { 
+                    val budget = monthlyBudgetStr.toLongOrNull() ?: 0L
+                    onSave(category?.id, name, type, iconName, colorCode, budget) 
+                },
             ) { Text("Simpan") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Batal") } },

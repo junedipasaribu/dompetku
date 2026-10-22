@@ -2,6 +2,7 @@ package com.junps.dompetku.ui.analytics
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -551,41 +552,71 @@ private fun ExpenseLegendRow(expense: CategoryExpense, totalExpense: Long) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Row(
-            modifier = Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(CircleShape)
-                    .background(color.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = categoryIcon(expense.categoryIconName),
-                    contentDescription = null,
-                    tint = color,
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 10.dp),
-            ) {
-                Text(expense.categoryName, fontWeight = FontWeight.SemiBold)
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(color.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = categoryIcon(expense.categoryIconName),
+                        contentDescription = null,
+                        tint = color,
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 10.dp),
+                ) {
+                    Text(expense.categoryName, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        formatPercentage(expense.amount, totalExpense),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
-                    formatPercentage(expense.amount, totalExpense),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    formatRupiah(expense.amount),
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                formatRupiah(expense.amount),
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (expense.monthlyBudget > 0) {
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("Anggaran: ${formatRupiah(expense.monthlyBudget)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val remaining = expense.monthlyBudget - expense.amount
+                    Text(
+                        if (remaining >= 0) "Sisa: ${formatRupiah(remaining)}" else "Lebih: ${formatRupiah(-remaining)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (remaining >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                Box(
+                    Modifier
+                        .padding(top = 5.dp)
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                ) {
+                    val fraction = (expense.amount.toFloat() / expense.monthlyBudget.toFloat()).coerceIn(0f, 1f)
+                    Box(
+                        Modifier
+                            .fillMaxWidth(fraction)
+                            .height(6.dp)
+                            .background(if (expense.amount > expense.monthlyBudget) MaterialTheme.colorScheme.error else color, CircleShape),
+                    )
+                }
+            }
         }
     }
 }

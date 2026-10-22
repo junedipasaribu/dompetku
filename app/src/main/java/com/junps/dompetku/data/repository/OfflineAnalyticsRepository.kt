@@ -25,6 +25,7 @@ class OfflineAnalyticsRepository @Inject constructor(
                     categoryIconName = row.categoryIconName,
                     categoryColorCode = row.categoryColorCode,
                     amount = row.totalAmount,
+                    monthlyBudget = row.monthlyBudget,
                 )
             }
         }

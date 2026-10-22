@@ -59,10 +59,11 @@ class CategoryViewModel @Inject constructor(
         type: TransactionType,
         iconName: String,
         colorCode: String,
+        monthlyBudget: Long = 0,
     ) {
         viewModelScope.launch {
             runCatching {
-                saveCategory(SaveCategoryRequest(id, name, type, iconName, colorCode))
+                saveCategory(SaveCategoryRequest(id, name, type, iconName, colorCode, monthlyBudget))
             }.onSuccess {
                 _events.emit(CategoryEvent.Saved)
             }.onFailure { error ->

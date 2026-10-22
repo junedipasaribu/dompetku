@@ -16,4 +16,5 @@ data class CategoryEntity(
     val iconName: String,
     val colorCode: String,
     val isDefault: Boolean = false,
+    val monthlyBudget: Long = 0,
 )

@@ -6,4 +6,5 @@ data class CategoryExpense(
     val categoryIconName: String,
     val categoryColorCode: String,
     val amount: Long,
+    val monthlyBudget: Long = 0,
 )

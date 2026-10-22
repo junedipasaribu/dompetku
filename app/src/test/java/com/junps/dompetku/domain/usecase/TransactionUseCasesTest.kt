@@ -1,9 +1,11 @@
 package com.junps.dompetku.domain.usecase
 
 import com.junps.dompetku.domain.model.Category
+import com.junps.dompetku.domain.model.Account
 import com.junps.dompetku.domain.model.Transaction
 import com.junps.dompetku.domain.model.TransactionType
 import com.junps.dompetku.domain.repository.CategoryRepository
+import com.junps.dompetku.domain.repository.AccountRepository
 import com.junps.dompetku.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,10 +21,11 @@ class TransactionUseCasesTest {
         val categories = TransactionFakeCategoryRepository(listOf(testCategory))
         val transactions = FakeTransactionRepository()
 
-        SaveTransactionUseCase(transactions, categories)(
+        SaveTransactionUseCase(transactions, categories, FakeAccountRepository())(
             SaveTransactionRequest(
                 amount = 25_000,
                 categoryId = testCategory.id,
+                accountId = testAccount.id,
                 transactionDate = 1_700_000_000_000,
                 note = "   ",
             ),
@@ -39,11 +42,12 @@ class TransactionUseCasesTest {
         val categories = TransactionFakeCategoryRepository(listOf(testCategory))
         val transactions = FakeTransactionRepository(listOf(original))
 
-        SaveTransactionUseCase(transactions, categories)(
+        SaveTransactionUseCase(transactions, categories, FakeAccountRepository())(
             SaveTransactionRequest(
                 id = original.id,
                 amount = 75_000,
                 categoryId = testCategory.id,
+                accountId = testAccount.id,
                 transactionDate = original.transactionDate,
                 note = "Diubah",
             ),
@@ -58,11 +62,12 @@ class TransactionUseCasesTest {
         val useCase = SaveTransactionUseCase(
             FakeTransactionRepository(),
             TransactionFakeCategoryRepository(listOf(testCategory)),
+            FakeAccountRepository(),
         )
 
         val error = assertThrows(TransactionException::class.java) {
             runBlocking {
-                useCase(SaveTransactionRequest(amount = 0, categoryId = testCategory.id, transactionDate = 1, note = ""))
+                useCase(SaveTransactionRequest(amount = 0, categoryId = testCategory.id, accountId = testAccount.id, transactionDate = 1, note = ""))
             }
         }
 
@@ -74,11 +79,12 @@ class TransactionUseCasesTest {
         val useCase = SaveTransactionUseCase(
             FakeTransactionRepository(),
             TransactionFakeCategoryRepository(),
+            FakeAccountRepository(),
         )
 
         val error = assertThrows(TransactionException::class.java) {
             runBlocking {
-                useCase(SaveTransactionRequest(amount = 10_000, categoryId = "missing", transactionDate = 1, note = ""))
+                useCase(SaveTransactionRequest(amount = 10_000, categoryId = "missing", accountId = testAccount.id, transactionDate = 1, note = ""))
             }
         }
 
@@ -103,14 +109,31 @@ class TransactionUseCasesTest {
             colorCode = "#E65100",
             isDefault = true,
         )
+        val testAccount = Account(
+            id = "default_account",
+            name = "Dompet Utama",
+            createdAt = 1_699_000_000_000,
+        )
         val testTransaction = Transaction(
             id = "transaction-1",
             amount = 50_000,
             categoryId = testCategory.id,
+            accountId = testAccount.id,
             transactionDate = 1_700_000_000_000,
             note = null,
             createdAt = 1_699_000_000_000,
         )
+    }
+}
+
+private class FakeAccountRepository : AccountRepository {
+    override fun getAllAccounts(): Flow<List<Account>> = MutableStateFlow(listOf(testAccount))
+    override suspend fun getAccountById(id: String): Account? = testAccount.takeIf { it.id == id }
+    override suspend fun saveAccount(account: Account) = Unit
+    override suspend fun deleteAccount(account: Account) = Unit
+
+    private companion object {
+        val testAccount = Account("default_account", "Dompet Utama", createdAt = 1_699_000_000_000)
     }
 }
 

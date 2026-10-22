@@ -8,4 +8,5 @@ import kotlinx.coroutines.flow.Flow
 interface DashboardRepository {
     fun observeSummary(monthRange: MonthRange): Flow<FinancialSummary>
     fun observeRecentTransactions(limit: Int): Flow<List<TransactionWithCategory>>
+    fun observeAccountsWithBalance(): Flow<List<com.junps.dompetku.domain.model.AccountWithBalance>>
 }
