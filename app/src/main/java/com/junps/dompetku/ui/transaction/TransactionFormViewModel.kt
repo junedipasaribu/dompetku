@@ -3,8 +3,10 @@ package com.junps.dompetku.ui.transaction
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
 import com.junps.dompetku.core.format.formatAmountInput
 import com.junps.dompetku.core.format.parseAmountInput
+import com.junps.dompetku.data.local.DompetKuDatabase
 import com.junps.dompetku.domain.model.Category
 import com.junps.dompetku.domain.model.TransactionType
 import com.junps.dompetku.domain.repository.AccountRepository
@@ -58,6 +60,7 @@ class TransactionFormViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository,
     private val accountRepository: AccountRepository,
+    private val database: DompetKuDatabase,
     private val recurringDao: RecurringTransactionDao,
     private val saveTransaction: SaveTransactionUseCase,
     private val deleteTransaction: DeleteTransactionUseCase,
@@ -176,40 +179,42 @@ class TransactionFormViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             runCatching {
-                saveTransaction(
-                    SaveTransactionRequest(
-                        id = state.transactionId,
-                        amount = amount,
-                        categoryId = categoryId,
-                        accountId = accountId,
-                        transactionDate = state.transactionDate,
-                        note = state.note,
-                    ),
-                )
-                
-                // Add to recurring if enabled and it's a new transaction (not editing)
-                if (state.isRecurring && !state.isEditMode) {
-                    val nextTime = java.util.Calendar.getInstance().apply {
-                        timeInMillis = state.transactionDate
-                        when (state.frequency) {
-                            "daily" -> add(java.util.Calendar.DAY_OF_YEAR, 1)
-                            "weekly" -> add(java.util.Calendar.WEEK_OF_YEAR, 1)
-                            "monthly" -> add(java.util.Calendar.MONTH, 1)
-                            "yearly" -> add(java.util.Calendar.YEAR, 1)
-                        }
-                    }.timeInMillis
-                    
-                    val recurringEntity = com.junps.dompetku.data.local.entity.RecurringTransactionEntity(
-                        amount = amount,
-                        categoryId = categoryId,
-                        accountId = accountId,
-                        type = state.selectedCategory?.type?.name ?: "EXPENSE",
-                        note = state.note,
-                        frequency = state.frequency,
-                        nextExecutionTime = nextTime,
-                        isActive = true
+                database.withTransaction {
+                    saveTransaction(
+                        SaveTransactionRequest(
+                            id = state.transactionId,
+                            amount = amount,
+                            categoryId = categoryId,
+                            accountId = accountId,
+                            transactionDate = state.transactionDate,
+                            note = state.note,
+                        ),
                     )
-                    recurringDao.insertRecurringTransaction(recurringEntity)
+
+                    // Save the first transaction and its recurrence rule as one database change.
+                    if (state.isRecurring && !state.isEditMode) {
+                        val nextTime = java.util.Calendar.getInstance().apply {
+                            timeInMillis = state.transactionDate
+                            when (state.frequency) {
+                                "daily" -> add(java.util.Calendar.DAY_OF_YEAR, 1)
+                                "weekly" -> add(java.util.Calendar.WEEK_OF_YEAR, 1)
+                                "monthly" -> add(java.util.Calendar.MONTH, 1)
+                                "yearly" -> add(java.util.Calendar.YEAR, 1)
+                            }
+                        }.timeInMillis
+
+                        val recurringEntity = com.junps.dompetku.data.local.entity.RecurringTransactionEntity(
+                            amount = amount,
+                            categoryId = categoryId,
+                            accountId = accountId,
+                            type = state.selectedCategory?.type?.name ?: "EXPENSE",
+                            note = state.note,
+                            frequency = state.frequency,
+                            nextExecutionTime = nextTime,
+                            isActive = true
+                        )
+                        recurringDao.insertRecurringTransaction(recurringEntity)
+                    }
                 }
             }.onSuccess {
                 _events.emit(TransactionFormEvent.Saved)

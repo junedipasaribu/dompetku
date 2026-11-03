@@ -26,45 +26,62 @@ class RecurringTransactionWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val currentTime = System.currentTimeMillis()
         val dueTransactions = recurringDao.getDueTransactions(currentTime)
+        var processedOccurrences = 0
+        var hasRemainingDueOccurrences = false
 
         for (recurring in dueTransactions) {
+            if (processedOccurrences >= MAX_OCCURRENCES_PER_RUN) {
+                hasRemainingDueOccurrences = true
+                break
+            }
+
+            var currentStillDue = false
             database.withTransaction {
                 // Re-read inside the transaction so duplicate or stale worker runs cannot
-                // record the same scheduled occurrence twice.
+                // record the same scheduled occurrence twice. Keep each occurrence and its
+                // schedule advance atomic so a retry cannot duplicate a posted transaction.
                 val current = recurringDao.getRecurringTransactionById(recurring.id)
                     ?: return@withTransaction
                 if (!current.isActive || current.nextExecutionTime > currentTime) return@withTransaction
 
-                transactionDao.insert(
-                    TransactionEntity(
-                        id = UUID.randomUUID().toString(),
-                        amount = current.amount,
-                        categoryId = current.categoryId,
-                        accountId = current.accountId,
-                        transactionDate = current.nextExecutionTime,
-                        note = current.note,
-                        createdAt = currentTime,
-                    ),
-                )
+                var nextExecutionTime = current.nextExecutionTime
+                while (
+                    nextExecutionTime <= currentTime &&
+                    processedOccurrences < MAX_OCCURRENCES_PER_RUN
+                ) {
+                    transactionDao.insert(
+                        TransactionEntity(
+                            id = UUID.randomUUID().toString(),
+                            amount = current.amount,
+                            categoryId = current.categoryId,
+                            accountId = current.accountId,
+                            transactionDate = nextExecutionTime,
+                            note = current.note,
+                            createdAt = currentTime,
+                        ),
+                    )
+                    processedOccurrences++
+                    nextExecutionTime = calculateNextExecutionTime(nextExecutionTime, current.frequency)
+                }
 
                 recurringDao.updateRecurringTransaction(
-                    current.copy(
-                        nextExecutionTime = nextExecutionAfter(
-                            current.nextExecutionTime,
-                            currentTime,
-                            current.frequency,
-                        ),
-                    ),
+                    current.copy(nextExecutionTime = nextExecutionTime),
                 )
+                currentStillDue = nextExecutionTime <= currentTime
+            }
+
+            if (currentStillDue) {
+                hasRemainingDueOccurrences = true
+                break
             }
         }
 
-        return Result.success()
+        return if (hasRemainingDueOccurrences) Result.retry() else Result.success()
     }
 
-    private fun calculateNextExecutionTime(currentTime: Long, frequency: String): Long {
+    private fun calculateNextExecutionTime(scheduledTime: Long, frequency: String): Long {
         val calendar = Calendar.getInstance()
-        calendar.timeInMillis = currentTime
+        calendar.timeInMillis = scheduledTime
         when (frequency) {
             "daily" -> calendar.add(Calendar.DAY_OF_YEAR, 1)
             "weekly" -> calendar.add(Calendar.WEEK_OF_YEAR, 1)
@@ -75,9 +92,7 @@ class RecurringTransactionWorker @AssistedInject constructor(
         return calendar.timeInMillis
     }
 
-    private fun nextExecutionAfter(scheduledTime: Long, now: Long, frequency: String): Long {
-        var next = calculateNextExecutionTime(scheduledTime, frequency)
-        while (next <= now) next = calculateNextExecutionTime(next, frequency)
-        return next
+    private companion object {
+        const val MAX_OCCURRENCES_PER_RUN = 500
     }
 }
